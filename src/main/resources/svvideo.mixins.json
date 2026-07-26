@@ -1,0 +1,18 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "santiivlog.dev.svvideo.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "refmap": "svvideo.refmap.json",
+  "mixins": [
+  ],
+  "client": [
+    "SoundSystemMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}

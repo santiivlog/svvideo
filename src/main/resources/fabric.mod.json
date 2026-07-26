@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "svvideo",
+  "version": "${version}",
+  "name": "SVVideo",
+  "description": "",
+  "authors": [],
+  "contact": {},
+  "license": "All-Rights-Reserved",
+  "environment": "*",
+  "entrypoints": {
+    "client": [
+      "santiivlog.dev.svvideo.client.svvideoClient"
+    ],
+    "main": [
+      "santiivlog.dev.svvideo.svvideo"
+    ]
+  },
+  "mixins": [
+    "svvideo.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric-api": "*",
+    "minecraft": "${minecraft_version}"
+  },
+  "recommends": {
+    "watermedia": ">=${watermedia_version}"
+  }
+}
