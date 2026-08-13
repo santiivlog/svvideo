@@ -87,8 +87,11 @@ public class svvideoClient implements ClientModInitializer {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client != null && client.player != null) {
             client.player.sendMessage(Text.literal(
-                    "SVVideo requiere WaterMedia instalado en el cliente para reproducir videos, musica y GIFs."
+                    "SVVideo requiere WaterMedia (y WaterMedia Binaries) instalados en el cliente para "
+                            + "reproducir videos, musica y GIFs. WaterMedia 3 separa los binarios de FFmpeg "
+                            + "en el mod 'WaterMedia Binaries'; instala ambos."
             ), false);
         }
     }
 }
+

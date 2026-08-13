@@ -65,20 +65,9 @@ public class svvideocommands {
                 .then(CommandManager.literal("video")
                         .then(CommandManager.argument("targets", EntityArgumentType.players())
                                 .then(CommandManager.argument("volume", IntegerArgumentType.integer(0, 100))
-                                        .then(CommandManager.argument("url", StringArgumentType.greedyString())
-                                                .executes(ctx -> {
-                                                    Collection<ServerPlayerEntity> players = EntityArgumentType.getPlayers(ctx, "targets");
-                                                    int volume = IntegerArgumentType.getInteger(ctx, "volume");
-                                                    String url = StringArgumentType.getString(ctx, "url");
-
-                                                    for (ServerPlayerEntity player : players) {
-                                                        SVvideonetwork.sendVideo(player, url, volume);
-                                                    }
-
-                                                    ctx.getSource().sendFeedback(() ->
-                                                            Text.literal("Video enviado: " + url + " volumen: " + volume), false);
-                                                    return players.size();
-                                                })))))
+                                        .then(CommandManager.argument("source", StringArgumentType.greedyString())
+                                                .suggests((ctx, builder) -> suggestMediaFiles(builder))
+                                                .executes(svvideocommands::executeVideo)))))
 
                 .then(CommandManager.literal("music")
                         .then(CommandManager.literal("hidehud")
@@ -86,74 +75,32 @@ public class svvideocommands {
                                         .executes(ctx -> toggleMusicHud(ctx.getSource(),
                                                 EntityArgumentType.getPlayers(ctx, "targets"))))
                                 .executes(ctx -> toggleMusicHudSelf(ctx.getSource())))
-                        .then(CommandManager.literal("file")
-                                .then(CommandManager.argument("targets", EntityArgumentType.players())
-                                        .then(CommandManager.argument("volume", IntegerArgumentType.integer(0, 100))
-                                                .then(CommandManager.argument("file", StringArgumentType.greedyString())
-                                                        .suggests((ctx, builder) -> suggestMediaFiles(builder))
-                                                        .executes(ctx -> {
-                                                            Collection<ServerPlayerEntity> players = EntityArgumentType.getPlayers(ctx, "targets");
-                                                            int volume = IntegerArgumentType.getInteger(ctx, "volume");
-                                                            String file = StringArgumentType.getString(ctx, "file");
-                                                            String mediaSource = publishServerFile(ctx.getSource(), file);
-                                                            if (mediaSource.isBlank()) {
-                                                                return 0;
-                                                            }
-
-                                                            for (ServerPlayerEntity player : players) {
-                                                                SVvideonetwork.sendMusicFile(player, mediaSource, volume);
-                                                            }
-
-                                                            ctx.getSource().sendFeedback(() ->
-                                                                    Text.literal("Musica local enviada: " + file + " volumen: " + volume), false);
-                                                            return players.size();
-                                                        })))))
                         .then(CommandManager.argument("targets", EntityArgumentType.players())
                                 .then(CommandManager.argument("volume", IntegerArgumentType.integer(0, 100))
-                                        .then(CommandManager.argument("url", StringArgumentType.greedyString())
-                                                .executes(ctx -> {
-                                                    Collection<ServerPlayerEntity> players = EntityArgumentType.getPlayers(ctx, "targets");
-                                                    int volume = IntegerArgumentType.getInteger(ctx, "volume");
-                                                    String url = StringArgumentType.getString(ctx, "url");
-
-                                                    for (ServerPlayerEntity player : players) {
-                                                        SVvideonetwork.sendMusic(player, url, volume);
-                                                    }
-
-                                                    ctx.getSource().sendFeedback(() ->
-                                                            Text.literal("Musica enviada: " + url + " volumen: " + volume), false);
-                                                    return players.size();
-                                                })))))
-
-                .then(CommandManager.literal("file")
-                        .then(CommandManager.argument("targets", EntityArgumentType.players())
-                                .then(CommandManager.argument("volume", IntegerArgumentType.integer(0, 100))
-                                        .then(CommandManager.argument("file", StringArgumentType.greedyString())
+                                        .then(CommandManager.argument("source", StringArgumentType.greedyString())
                                                 .suggests((ctx, builder) -> suggestMediaFiles(builder))
-                                                .executes(ctx -> {
-                                                    Collection<ServerPlayerEntity> players = EntityArgumentType.getPlayers(ctx, "targets");
-                                                    int volume = IntegerArgumentType.getInteger(ctx, "volume");
-                                                    String file = StringArgumentType.getString(ctx, "file");
-                                                    String mediaSource = publishServerFile(ctx.getSource(), file);
-                                                    if (mediaSource.isBlank()) {
-                                                        return 0;
-                                                    }
-
-                                                    for (ServerPlayerEntity player : players) {
-                                                        SVvideonetwork.sendFile(player, mediaSource, volume);
-                                                    }
-
-                                                    ctx.getSource().sendFeedback(() ->
-                                                            Text.literal("Video local enviado: " + file + " volumen: " + volume), false);
-                                                    return players.size();
-                                                })))))
+                                                .executes(svvideocommands::executeMusic)))))
 
                 .then(CommandManager.literal("gif")
-                        .then(buildGifUrlCommand())
-                        .then(buildGifFileCommand()))
+                        .then(CommandManager.argument("targets", EntityArgumentType.players())
+                                .then(CommandManager.argument("volume", IntegerArgumentType.integer(0, 100))
+                                        .then(CommandManager.argument("position", StringArgumentType.word())
+                                                .suggests((ctx, builder) -> suggestPositions(builder))
+                                                .then(CommandManager.argument("source", StringArgumentType.string())
+                                                        .suggests((ctx, builder) -> suggestMediaFiles(builder))
+                                                        .executes(ctx -> executeGif(ctx, 100, 0))
+                                                        .then(CommandManager.argument("scale", IntegerArgumentType.integer(1, 500))
+                                                                .executes(ctx -> executeGif(
+                                                                        ctx,
+                                                                        IntegerArgumentType.getInteger(ctx, "scale"),
+                                                                        0))
+                                                                .then(CommandManager.argument("duration", IntegerArgumentType.integer(1, 3600))
+                                                                        .executes(ctx -> executeGif(
+                                                                                ctx,
+                                                                                IntegerArgumentType.getInteger(ctx, "scale"),
+                                                                                IntegerArgumentType.getInteger(ctx, "duration"))))))))))
 
                 .then(buildVanillaSoundsLiteral("vanillasounds"))
-                .then(CommandManager.literal("vanilla").then(buildVanillaSoundsLiteral("sounds")))
 
                 .then(buildPlayblockCommand());
     }
@@ -175,47 +122,6 @@ public class svvideocommands {
                                         ctx.getSource(),
                                         EntityArgumentType.getPlayers(ctx, "targets"),
                                         false))));
-    }
-
-    private static LiteralArgumentBuilder<ServerCommandSource> buildGifUrlCommand() {
-        return CommandManager.literal("url")
-                .then(CommandManager.argument("targets", EntityArgumentType.players())
-                        .then(CommandManager.argument("volume", IntegerArgumentType.integer(0, 100))
-                                .then(CommandManager.argument("position", StringArgumentType.word())
-                                        .suggests((ctx, builder) -> suggestPositions(builder))
-                                        .then(CommandManager.argument("url", StringArgumentType.string())
-                                                .executes(ctx -> executeGifUrl(ctx, 100, 0))
-                                                .then(CommandManager.argument("scale", IntegerArgumentType.integer(1, 500))
-                                                        .executes(ctx -> executeGifUrl(
-                                                                ctx,
-                                                                IntegerArgumentType.getInteger(ctx, "scale"),
-                                                                0))
-                                                        .then(CommandManager.argument("duration", IntegerArgumentType.integer(1, 3600))
-                                                                .executes(ctx -> executeGifUrl(
-                                                                        ctx,
-                                                                        IntegerArgumentType.getInteger(ctx, "scale"),
-                                                                        IntegerArgumentType.getInteger(ctx, "duration")))))))));
-    }
-
-    private static LiteralArgumentBuilder<ServerCommandSource> buildGifFileCommand() {
-        return CommandManager.literal("file")
-                .then(CommandManager.argument("targets", EntityArgumentType.players())
-                        .then(CommandManager.argument("volume", IntegerArgumentType.integer(0, 100))
-                                .then(CommandManager.argument("position", StringArgumentType.word())
-                                        .suggests((ctx, builder) -> suggestPositions(builder))
-                                        .then(CommandManager.argument("file", StringArgumentType.string())
-                                                .suggests((ctx, builder) -> suggestMediaFiles(builder))
-                                                .executes(ctx -> executeGifFile(ctx, 100, 0))
-                                                .then(CommandManager.argument("scale", IntegerArgumentType.integer(1, 500))
-                                                        .executes(ctx -> executeGifFile(
-                                                                ctx,
-                                                                IntegerArgumentType.getInteger(ctx, "scale"),
-                                                                0))
-                                                        .then(CommandManager.argument("duration", IntegerArgumentType.integer(1, 3600))
-                                                                .executes(ctx -> executeGifFile(
-                                                                        ctx,
-                                                                        IntegerArgumentType.getInteger(ctx, "scale"),
-                                                                        IntegerArgumentType.getInteger(ctx, "duration")))))))));
     }
 
     private static LiteralArgumentBuilder<ServerCommandSource> buildPlayblockCommand() {
@@ -315,40 +221,91 @@ public class svvideocommands {
         return 1;
     }
 
-    private static int executeGifUrl(CommandContext<ServerCommandSource> ctx, int scale, int duration)
-            throws CommandSyntaxException {
-        Collection<ServerPlayerEntity> players = EntityArgumentType.getPlayers(ctx, "targets");
-        int volume = IntegerArgumentType.getInteger(ctx, "volume");
-        String position = StringArgumentType.getString(ctx, "position");
-        String url = StringArgumentType.getString(ctx, "url");
-
-        for (ServerPlayerEntity player : players) {
-            SVvideonetwork.sendGifUrl(player, url, volume, position, scale, duration);
-        }
-
-        ctx.getSource().sendFeedback(() -> Text.literal(
-                formatGifFeedback("GIF/video URL enviado: ", url, position, scale, duration)
-        ), false);
-        return players.size();
+    private static boolean isUrl(String source) {
+        String lower = source.toLowerCase().trim();
+        return lower.startsWith("http://")
+                || lower.startsWith("https://")
+                || lower.startsWith("www.");
     }
 
-    private static int executeGifFile(CommandContext<ServerCommandSource> ctx, int scale, int duration)
-            throws CommandSyntaxException {
+    private static int executeVideo(CommandContext<ServerCommandSource> ctx) throws CommandSyntaxException {
         Collection<ServerPlayerEntity> players = EntityArgumentType.getPlayers(ctx, "targets");
         int volume = IntegerArgumentType.getInteger(ctx, "volume");
-        String position = StringArgumentType.getString(ctx, "position");
-        String file = StringArgumentType.getString(ctx, "file");
-        String mediaSource = publishGifFile(ctx.getSource(), file);
+        String source = StringArgumentType.getString(ctx, "source").trim();
+
+        if (isUrl(source)) {
+            for (ServerPlayerEntity player : players) {
+                SVvideonetwork.sendVideo(player, source, volume);
+            }
+            ctx.getSource().sendFeedback(() ->
+                    Text.literal("Video (URL) enviado: " + source + " volumen: " + volume), false);
+            return players.size();
+        }
+
+        String mediaSource = publishServerFile(ctx.getSource(), source);
         if (mediaSource.isBlank()) {
             return 0;
         }
+        for (ServerPlayerEntity player : players) {
+            SVvideonetwork.sendFile(player, mediaSource, volume);
+        }
+        ctx.getSource().sendFeedback(() ->
+                Text.literal("Video (archivo) enviado: " + source + " volumen: " + volume), false);
+        return players.size();
+    }
 
+    private static int executeMusic(CommandContext<ServerCommandSource> ctx) throws CommandSyntaxException {
+        Collection<ServerPlayerEntity> players = EntityArgumentType.getPlayers(ctx, "targets");
+        int volume = IntegerArgumentType.getInteger(ctx, "volume");
+        String source = StringArgumentType.getString(ctx, "source").trim();
+
+        if (isUrl(source)) {
+            for (ServerPlayerEntity player : players) {
+                SVvideonetwork.sendMusic(player, source, volume);
+            }
+            ctx.getSource().sendFeedback(() ->
+                    Text.literal("Musica (URL) enviada: " + source + " volumen: " + volume), false);
+            return players.size();
+        }
+
+        String mediaSource = publishServerFile(ctx.getSource(), source);
+        if (mediaSource.isBlank()) {
+            return 0;
+        }
+        for (ServerPlayerEntity player : players) {
+            SVvideonetwork.sendMusicFile(player, mediaSource, volume);
+        }
+        ctx.getSource().sendFeedback(() ->
+                Text.literal("Musica (archivo) enviada: " + source + " volumen: " + volume), false);
+        return players.size();
+    }
+
+    private static int executeGif(CommandContext<ServerCommandSource> ctx, int scale, int duration)
+            throws CommandSyntaxException {
+        Collection<ServerPlayerEntity> players = EntityArgumentType.getPlayers(ctx, "targets");
+        int volume = IntegerArgumentType.getInteger(ctx, "volume");
+        String position = StringArgumentType.getString(ctx, "position");
+        String source = StringArgumentType.getString(ctx, "source").trim();
+
+        if (isUrl(source)) {
+            for (ServerPlayerEntity player : players) {
+                SVvideonetwork.sendGifUrl(player, source, volume, position, scale, duration);
+            }
+            ctx.getSource().sendFeedback(() -> Text.literal(
+                    formatGifFeedback("GIF (URL) enviado: ", source, position, scale, duration)
+            ), false);
+            return players.size();
+        }
+
+        String mediaSource = publishGifFile(ctx.getSource(), source);
+        if (mediaSource.isBlank()) {
+            return 0;
+        }
         for (ServerPlayerEntity player : players) {
             SVvideonetwork.sendGifFile(player, mediaSource, volume, position, scale, duration);
         }
-
         ctx.getSource().sendFeedback(() -> Text.literal(
-                formatGifFeedback("GIF/video local enviado: ", file, position, scale, duration)
+                formatGifFeedback("GIF (archivo) enviado: ", source, position, scale, duration)
         ), false);
         return players.size();
     }
@@ -488,3 +445,4 @@ public class svvideocommands {
         return builder.buildFuture();
     }
 }
+

@@ -76,7 +76,6 @@ public final class VideoRenderer {
     private static GLEngine videoEngine;
     private static ALEngine audioEngine;
 
-    
     private static final List<GifOverlay> gifOverlays = new ArrayList<>();
 
     private static boolean registered;
@@ -144,7 +143,6 @@ public final class VideoRenderer {
         startPlayback(resolution.resolvedSource(), volume, true, "fullscreen", false, "MUSIC_FILE");
     }
 
-    
     public static void playOverlay(String url, int volume, String position) {
         addGifOverlay(cleanUrl(url), position, false);
         init();
@@ -159,14 +157,13 @@ public final class VideoRenderer {
         startPlayback(resolution.resolvedSource(), volume, false, "fullscreen", false, "FILE");
     }
 
-    
     public static void playOverlayFile(String path, int volume, String position) {
         SVVideoFiles.ClientMediaResolution resolution = SVVideoMediaTransferClient.resolveOrRequest(cleanUrl(path));
         if (!resolution.success()) {
             handleSourceResolutionFailure("GIF_FILE", path, resolution.failureReason());
             return;
         }
-        
+
         addGifOverlay(resolution.resolvedSource(), position, true);
         init();
     }
@@ -353,7 +350,6 @@ public final class VideoRenderer {
                 }
             }
 
-            
             renderGifOverlays(context);
 
         } catch (Exception | LinkageError e) {
@@ -396,7 +392,6 @@ public final class VideoRenderer {
                 enforceLoadingTimeout();
             }
 
-            
             tickGifOverlays();
 
             if (!playing || player == null) {
@@ -458,7 +453,7 @@ public final class VideoRenderer {
             currentMediaTitle = prepared.title().isBlank() ? currentMediaLabel : prepared.title();
             loadThumbnailAsync(prepared.originalSource(), prepared.sessionId());
 
-            mrl = MediaAPI.getMRL(prepared.playableSource());
+            mrl = MediaAPI.mrl(prepared.playableSource());
             if (mrl != null) {
                 setPlaybackState(SVVideoPlaybackState.LOADING, "MRL creada, esperando ready()");
             }
@@ -485,8 +480,8 @@ public final class VideoRenderer {
                 Executor renderExecutor = task -> RenderSystem.recordRenderCall(task::run);
                 player = SVVideoWaterMediaCompat.createPlayer(
                         mrl,
-                        () -> videoEngine = new GLEngine.Builder(Thread.currentThread(), renderExecutor).build(),
-                        () -> audioEngine = ALEngine.buildDefault()
+                        () -> videoEngine = MediaAPI.glEngine(Thread.currentThread(), renderExecutor),
+                        () -> audioEngine = MediaAPI.alEngine()
                 );
                 if (player == null) {
                     releaseDetachedEngines();
@@ -1539,8 +1534,6 @@ public final class VideoRenderer {
         }
     }
 
-    
-
     private static class GifOverlay {
         private SVVideoGifPlayer gifPlayer;
         private CompletableFuture<SVVideoGifPlayer> loadTask;
@@ -1580,7 +1573,7 @@ public final class VideoRenderer {
         }
 
         boolean shouldExpire() {
-            
+
             if (gifPlayer == null && loadTask == null) return true;
             if (durationMs > 0 && timerStarted) {
                 return System.currentTimeMillis() - startTime >= durationMs;
@@ -1627,3 +1620,4 @@ public final class VideoRenderer {
         }
     }
 }
+

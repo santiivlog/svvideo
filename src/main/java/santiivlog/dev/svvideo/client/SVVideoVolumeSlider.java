@@ -27,3 +27,4 @@ public class SVVideoVolumeSlider extends SliderWidget {
         updateMessage();
     }
 }
+

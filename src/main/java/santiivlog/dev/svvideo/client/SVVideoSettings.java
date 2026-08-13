@@ -54,8 +54,13 @@ public final class SVVideoSettings {
         vanillaSoundsEnabled = enabled;
         save();
 
-        
-}
+        if (!enabled) {
+            MinecraftClient client = MinecraftClient.getInstance();
+            if (client != null && client.getSoundManager() != null) {
+                client.getSoundManager().stopSounds(null, SoundCategory.MUSIC);
+            }
+        }
+    }
 
     public static int mixVolume(int baseVolume, SoundCategory soundCategory) {
         float factor = clamp(baseVolume) / 100.0f;
@@ -132,3 +137,4 @@ public final class SVVideoSettings {
         return Math.max(0, Math.min(100, volume));
     }
 }
+
