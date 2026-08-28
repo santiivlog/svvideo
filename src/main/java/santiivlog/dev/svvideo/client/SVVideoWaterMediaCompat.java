@@ -3,11 +3,14 @@ package santiivlog.dev.svvideo.client;
 import org.watermedia.api.media.MRL;
 import org.watermedia.api.media.MediaAPI;
 import org.watermedia.api.media.engines.GFXEngine;
+import org.watermedia.api.media.engines.ALEngine;
 import org.watermedia.api.media.engines.SFXEngine;
+import org.watermedia.api.media.engines.GLEngine;
 import org.watermedia.api.media.players.MediaPlayer;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
 final class SVVideoWaterMediaCompat {
@@ -19,8 +22,36 @@ final class SVVideoWaterMediaCompat {
             findMethod(MRL.class, "createPlayer", GFXEngine.class, SFXEngine.class);
     private static final Method MEDIA_API_CREATE_PLAYER =
             findMethod(MediaAPI.class, "createPlayer", MRL.class, Supplier.class, Supplier.class);
+    private static final Method MEDIA_API_MRL =
+            findMethod(MediaAPI.class, "mrl", String.class);
+    private static final Method MEDIA_API_GET_MRL =
+            findMethod(MediaAPI.class, "getMRL", String.class);
+    private static final Method MEDIA_API_GL_ENGINE =
+            findMethod(MediaAPI.class, "glEngine", Thread.class, Executor.class);
+    private static final Method MEDIA_API_AL_ENGINE =
+            findMethod(MediaAPI.class, "alEngine");
+    private static final Method MEDIA_API_FFMPEG_LOADED =
+            findMethod(MediaAPI.class, "ffmpegLoaded");
 
     private SVVideoWaterMediaCompat() {
+    }
+
+    static MRL createMrl(String source) {
+        try {
+            if (MEDIA_API_MRL != null) {
+                return (MRL) MEDIA_API_MRL.invoke(null, source);
+            }
+            if (MEDIA_API_GET_MRL != null) {
+                return (MRL) MEDIA_API_GET_MRL.invoke(null, source);
+            }
+        } catch (IllegalAccessException e) {
+            throw new IllegalStateException("No se pudo acceder a la API de WaterMedia.", e);
+        } catch (InvocationTargetException e) {
+            Throwable cause = e.getCause() != null ? e.getCause() : e;
+            throw new IllegalStateException("WaterMedia fallo al crear la MRL.", cause);
+        }
+
+        throw new IllegalStateException("Version de WaterMedia incompatible: no hay metodo MRL usable.");
     }
 
     static boolean isMrlReady(MRL mrl) {
@@ -82,10 +113,39 @@ final class SVVideoWaterMediaCompat {
         throw new IllegalStateException("Version de WaterMedia incompatible: no hay metodo createPlayer usable.");
     }
 
-    static boolean isNativeBackendLoaded() {
+    static GLEngine createGlEngine(Thread renderThread, Executor renderExecutor) {
         try {
-            return MediaAPI.ffmpegLoaded();
-        } catch (Throwable ignored) {
+            if (MEDIA_API_GL_ENGINE != null) {
+                return (GLEngine) MEDIA_API_GL_ENGINE.invoke(null, renderThread, renderExecutor);
+            }
+        } catch (IllegalAccessException e) {
+            throw new IllegalStateException("No se pudo acceder a la API de WaterMedia.", e);
+        } catch (InvocationTargetException e) {
+            Throwable cause = e.getCause() != null ? e.getCause() : e;
+            throw new IllegalStateException("WaterMedia fallo al crear el engine de video.", cause);
+        }
+
+        return new GLEngine.Builder(renderThread, renderExecutor).build();
+    }
+
+    static ALEngine createAlEngine() {
+        try {
+            if (MEDIA_API_AL_ENGINE != null) {
+                return (ALEngine) MEDIA_API_AL_ENGINE.invoke(null);
+            }
+        } catch (IllegalAccessException e) {
+            throw new IllegalStateException("No se pudo acceder a la API de WaterMedia.", e);
+        } catch (InvocationTargetException e) {
+            Throwable cause = e.getCause() != null ? e.getCause() : e;
+            throw new IllegalStateException("WaterMedia fallo al crear el engine de audio.", cause);
+        }
+
+        return ALEngine.buildDefault();
+    }
+
+    static boolean isNativeBackendLoaded() {
+        if (MEDIA_API_FFMPEG_LOADED != null) {
+            return invokeBoolean(MEDIA_API_FFMPEG_LOADED, null, false);
         }
         try {
             Class<?> ffMediaPlayer = Class.forName("org.watermedia.api.media.players.FFMediaPlayer");

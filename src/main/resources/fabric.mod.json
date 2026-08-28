@@ -25,6 +25,8 @@
     "minecraft": "${minecraft_version}"
   },
   "recommends": {
-    "watermedia": ">=${watermedia_version}"
+    "watermedia": ">=${watermedia_version}",
+    "watermedia_binaries": ">=${watermedia_binaries_version}",
+    "watermedia_platform_extension": ">=${watermedia_youtube_version}"
   }
 }

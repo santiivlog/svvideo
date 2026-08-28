@@ -38,7 +38,8 @@ dependencies {
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
     modImplementation "maven.modrinth:watermedia:${project.watermedia_version}"
-    modRuntimeOnly "maven.modrinth:${project.watermedia_binaries_project}:${project.watermedia_binaries_version_id}"
+    modRuntimeOnly "maven.modrinth:watermedia-binaries:${project.watermedia_binaries_version}"
+    modRuntimeOnly "maven.modrinth:watermedia-yt-plugin:${project.watermedia_youtube_version}"
 
 }
 
@@ -47,13 +48,17 @@ processResources {
     inputs.property "minecraft_version", project.minecraft_version
     inputs.property "loader_version", project.loader_version
     inputs.property "watermedia_version", project.watermedia_version
+    inputs.property "watermedia_binaries_version", project.watermedia_binaries_version
+    inputs.property "watermedia_youtube_version", project.watermedia_youtube_version
     filteringCharset "UTF-8"
 
     filesMatching("fabric.mod.json") {
         expand "version": project.version,
                 "minecraft_version": project.minecraft_version,
                 "loader_version": project.loader_version,
-                "watermedia_version": project.watermedia_version
+                "watermedia_version": project.watermedia_version,
+                "watermedia_binaries_version": project.watermedia_binaries_version,
+                "watermedia_youtube_version": project.watermedia_youtube_version
     }
 }
 

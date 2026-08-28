@@ -19,7 +19,6 @@ import org.joml.Matrix4f;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.watermedia.api.media.MRL;
-import org.watermedia.api.media.MediaAPI;
 import org.watermedia.api.media.engines.ALEngine;
 import org.watermedia.api.media.engines.GLEngine;
 import org.watermedia.api.media.players.MediaPlayer;
@@ -453,7 +452,7 @@ public final class VideoRenderer {
             currentMediaTitle = prepared.title().isBlank() ? currentMediaLabel : prepared.title();
             loadThumbnailAsync(prepared.originalSource(), prepared.sessionId());
 
-            mrl = MediaAPI.mrl(prepared.playableSource());
+            mrl = SVVideoWaterMediaCompat.createMrl(prepared.playableSource());
             if (mrl != null) {
                 setPlaybackState(SVVideoPlaybackState.LOADING, "MRL creada, esperando ready()");
             }
@@ -480,8 +479,8 @@ public final class VideoRenderer {
                 Executor renderExecutor = task -> RenderSystem.recordRenderCall(task::run);
                 player = SVVideoWaterMediaCompat.createPlayer(
                         mrl,
-                        () -> videoEngine = MediaAPI.glEngine(Thread.currentThread(), renderExecutor),
-                        () -> audioEngine = MediaAPI.alEngine()
+                        () -> videoEngine = SVVideoWaterMediaCompat.createGlEngine(Thread.currentThread(), renderExecutor),
+                        () -> audioEngine = SVVideoWaterMediaCompat.createAlEngine()
                 );
                 if (player == null) {
                     releaseDetachedEngines();
@@ -930,6 +929,9 @@ public final class VideoRenderer {
     }
 
     private static String resolvePlayableUrl(String url) {
+        if (isYoutubeUrl(url)) {
+            return normalizeYoutubeUrl(url);
+        }
         if (!looksLikeHtmlPage(url)) {
             return url;
         }
@@ -1507,6 +1509,14 @@ public final class VideoRenderer {
         }
 
         return new RenderBox(x, y, boxWidth, boxHeight);
+    }
+
+    private static String normalizeYoutubeUrl(String url) {
+        Matcher matcher = YOUTUBE_ID_PATTERN.matcher(url);
+        if (matcher.find()) {
+            return "https://www.youtube.com/watch?v=" + matcher.group(1);
+        }
+        return url;
     }
 
     private static String cleanUrl(String url) {

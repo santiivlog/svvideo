@@ -8,7 +8,6 @@ import net.minecraft.util.math.Vec3d;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.watermedia.api.media.MRL;
-import org.watermedia.api.media.MediaAPI;
 import org.watermedia.api.media.engines.ALEngine;
 import org.watermedia.api.media.engines.GLEngine;
 import org.watermedia.api.media.players.MediaPlayer;
@@ -148,7 +147,7 @@ public final class SVVideoWorldMediaManager {
                 this.accessTask = CompletableFuture.supplyAsync(() ->
                         SVVideoYoutubeAccess.checkAnonymousPlayback(source));
             } else {
-                this.mrl = MediaAPI.mrl(source);
+                this.mrl = SVVideoWaterMediaCompat.createMrl(source);
             }
         }
 
@@ -188,7 +187,7 @@ public final class SVVideoWorldMediaManager {
                 return;
             }
             if (mrl == null) {
-                mrl = MediaAPI.mrl(source);
+                mrl = SVVideoWaterMediaCompat.createMrl(source);
             }
             if (SVVideoWaterMediaCompat.isMrlFailed(mrl)) {
                 fail(SVVideoWaterMediaCompat.failureMessage(
@@ -205,8 +204,8 @@ public final class SVVideoWorldMediaManager {
                 Executor renderExecutor = task -> RenderSystem.recordRenderCall(task::run);
                 player = SVVideoWaterMediaCompat.createPlayer(
                         mrl,
-                        () -> videoEngine = MediaAPI.glEngine(Thread.currentThread(), renderExecutor),
-                        () -> audioEngine = MediaAPI.alEngine()
+                        () -> videoEngine = SVVideoWaterMediaCompat.createGlEngine(Thread.currentThread(), renderExecutor),
+                        () -> audioEngine = SVVideoWaterMediaCompat.createAlEngine()
                 );
                 if (player == null) {
                     releaseEngines();
